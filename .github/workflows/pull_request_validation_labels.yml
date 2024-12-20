@@ -8,22 +8,33 @@ on:
       - unlabeled
 
 jobs:
-  enforce-labels:
+  check-labels:
     runs-on: ubuntu-latest
     steps:
-      - name: Check PR Labels
+      - name: Validate Labels
         uses: actions/github-script@v6
         with:
           script: |
-            const requiredLabels = ['bug', 'enhancement', 'infrastructure', 'documentation', 'technical debt','release', 'dependencies']; // Replace with your labels
+            const requiredLabels = ['bug', 'feature', 'enhancement'];
             const pr = context.payload.pull_request;
-
-            // Check if the PR has at least one of the required labels
             const prLabels = pr.labels.map(label => label.name);
             const hasRequiredLabel = requiredLabels.some(label => prLabels.includes(label));
 
             if (!hasRequiredLabel) {
-              throw new Error(`PR must have at least one of the following labels: ${requiredLabels.join(', ')}`);
+              return {
+                conclusion: 'failure',
+                output: {
+                  title: 'Missing Required Labels',
+                  summary: `Your PR is missing required labels. Add at least one of the following:\n\n- **bug**\n- **feature**\n- **enhancement**`,
+                  text: 'Labels help categorize the PR and ensure proper tracking.'
+                },
+              };
             }
 
-            console.log('PR has a valid label.');
+            return {
+              conclusion: 'success',
+              output: {
+                title: 'Label Check Passed',
+                summary: 'Your PR has at least one required label.',
+              },
+            };
