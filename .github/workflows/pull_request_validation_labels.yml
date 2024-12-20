@@ -1,40 +1,45 @@
-name: PR Label Enforcement
+name: Enforce PR Labels (Including Drafts)
 
 on:
   pull_request:
     types:
       - opened
+      - edited
       - labeled
       - unlabeled
+      - synchronize
+      - ready_for_review
 
 jobs:
-  check-labels:
+  enforce-labels:
     runs-on: ubuntu-latest
     steps:
-      - name: Validate Labels
+      - name: Validate PR Labels
         uses: actions/github-script@v6
         with:
           script: |
-            const requiredLabels = ['bug', 'feature', 'enhancement'];
+            const requiredLabels = [
+              'bug', 
+              'enhancement', 
+              'infrastructure', 
+              'documentation', 
+              'technical debt',
+              'release', 
+              'dependencies'
+            ];
+
             const pr = context.payload.pull_request;
             const prLabels = pr.labels.map(label => label.name);
+
+            // Check for at least one matching label
             const hasRequiredLabel = requiredLabels.some(label => prLabels.includes(label));
 
             if (!hasRequiredLabel) {
-              return {
-                conclusion: 'failure',
-                output: {
-                  title: 'Missing Required Labels',
-                  summary: `Your PR is missing required labels. Add at least one of the following:\n\n- **bug**\n- **feature**\n- **enhancement**`,
-                  text: 'Labels help categorize the PR and ensure proper tracking.'
-                },
-              };
+              console.error('\x1b[31mERROR:\x1b[0m No valid labels found.');
+              console.error('PR must include at least one of the following labels: \x1b[33m%s\x1b[0m', requiredLabels.join(', '));
+              throw new Error(
+                `PR must have at least one of the following labels: ${requiredLabels.join(', ')}`
+              );
             }
 
-            return {
-              conclusion: 'success',
-              output: {
-                title: 'Label Check Passed',
-                summary: 'Your PR has at least one required label.',
-              },
-            };
+            console.log('\x1b[32mSUCCESS:\x1b[0m PR has a valid label.');
