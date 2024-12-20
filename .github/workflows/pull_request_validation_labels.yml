@@ -13,7 +13,6 @@ jobs:
     steps:
       - name: Validate PR Labels
         run: |
-          # Define required labels as a Bash array
           required_labels=("bug" "enhancement" "infrastructure" "documentation" "technical debt" "release" "dependencies")
           
           # Extract PR labels from the GitHub event payload
