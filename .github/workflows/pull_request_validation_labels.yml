@@ -1,0 +1,29 @@
+name: PR Label Enforcement
+
+on:
+  pull_request:
+    types:
+      - opened
+      - labeled
+      - unlabeled
+
+jobs:
+  enforce-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR Labels
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const requiredLabels = ['bug', 'enhancement', 'infrastructure', 'documentation', 'technical debt','release', 'dependencies']; // Replace with your labels
+            const pr = context.payload.pull_request;
+
+            // Check if the PR has at least one of the required labels
+            const prLabels = pr.labels.map(label => label.name);
+            const hasRequiredLabel = requiredLabels.some(label => prLabels.includes(label));
+
+            if (!hasRequiredLabel) {
+              throw new Error(`PR must have at least one of the following labels: ${requiredLabels.join(', ')}`);
+            }
+
+            console.log('PR has a valid label.');
