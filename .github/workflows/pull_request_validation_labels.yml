@@ -19,10 +19,6 @@ jobs:
           # Extract PR labels from the GitHub event payload
           pr_labels=$(jq -r '.pull_request.labels[].name' < $GITHUB_EVENT_PATH)
 
-          # Debugging information
-          echo "PR Labels: $pr_labels"
-          echo "Required Labels: ${required_labels[*]}"
-
           # Check if any required label is present
           for label in "${required_labels[@]}"; do
             if [[ "$pr_labels" == *"$label"* ]]; then
