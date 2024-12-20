@@ -13,14 +13,20 @@ jobs:
     steps:
       - name: Validate PR Labels
         run: |
-          required_labels="bug enhancement infrastructure documentation technical debt release dependencies"
+          # Define required labels as a Bash array
+          required_labels=("bug" "enhancement" "infrastructure" "documentation" "technical debt" "release" "dependencies")
+          
+          # Extract PR labels from the GitHub event payload
           pr_labels=$(jq -r '.pull_request.labels[].name' < $GITHUB_EVENT_PATH)
 
+          # Debugging information
+          echo "PR Labels: $pr_labels"
+          echo "Required Labels: ${required_labels[*]}"
+
           # Check if any required label is present
-          for label in $required_labels; do
+          for label in "${required_labels[@]}"; do
             if [[ "$pr_labels" == *"$label"* ]]; then
               echo "### PR Label Check Passed ✅" >> $GITHUB_STEP_SUMMARY
-              echo "Your PR has a valid label. Great job!" >> $GITHUB_STEP_SUMMARY
               exit 0
             fi
           done
@@ -28,10 +34,9 @@ jobs:
           # If no required labels are found, fail the step
           echo "### Missing Required Labels 🚨" >> $GITHUB_STEP_SUMMARY
           echo "Your PR must have at least one of the following labels:" >> $GITHUB_STEP_SUMMARY
-          for label in $required_labels; do
+          for label in "${required_labels[@]}"; do
             echo "- **$label**" >> $GITHUB_STEP_SUMMARY
           done
-          echo -e "\n### Why Are Labels Important?\nLabels help categorize and prioritize your PR. Please add one of the required labels and re-run the check." >> $GITHUB_STEP_SUMMARY
 
           echo "::error::No valid labels found. Your PR must include at least one required label."
           exit 1
