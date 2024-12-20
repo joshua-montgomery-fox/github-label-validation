@@ -1,15 +1,11 @@
-name: Enforce PR Labels (Including Drafts)
+name: Enforce PR Labels
 
 on:
   pull_request:
     types:
       - opened
-      - edited
       - labeled
       - unlabeled
-      - synchronize
-      - ready_for_review
-
 jobs:
   enforce-labels:
     runs-on: ubuntu-latest
@@ -31,15 +27,31 @@ jobs:
             const pr = context.payload.pull_request;
             const prLabels = pr.labels.map(label => label.name);
 
-            // Check for at least one matching label
+            // Check if the PR has at least one required label
             const hasRequiredLabel = requiredLabels.some(label => prLabels.includes(label));
 
             if (!hasRequiredLabel) {
-              console.error('\x1b[31mERROR:\x1b[0m No valid labels found.');
-              console.error('PR must include at least one of the following labels: \x1b[33m%s\x1b[0m', requiredLabels.join(', '));
-              throw new Error(
-                `PR must have at least one of the following labels: ${requiredLabels.join(', ')}`
-              );
+              return {
+                conclusion: 'failure',
+                output: {
+                  title: 'Missing Required Labels',
+                  summary: `Your PR must have at least one of the following labels:\n\n` +
+                           `- **bug**\n` +
+                           `- **enhancement**\n` +
+                           `- **infrastructure**\n` +
+                           `- **documentation**\n` +
+                           `- **technical debt**\n` +
+                           `- **release**\n` +
+                           `- **dependencies**`,
+                  text: ``
+                },
+              };
             }
 
-            console.log('\x1b[32mSUCCESS:\x1b[0m PR has a valid label.');
+            return {
+              conclusion: 'success',
+              output: {
+                title: 'PR Label Check Passed',
+                summary: 'Your PR contains a valid label.'
+              }
+            };
