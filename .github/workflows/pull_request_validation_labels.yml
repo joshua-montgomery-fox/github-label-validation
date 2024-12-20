@@ -6,52 +6,32 @@ on:
       - opened
       - labeled
       - unlabeled
+
 jobs:
   enforce-labels:
     runs-on: ubuntu-latest
     steps:
       - name: Validate PR Labels
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const requiredLabels = [
-              'bug', 
-              'enhancement', 
-              'infrastructure', 
-              'documentation', 
-              'technical debt',
-              'release', 
-              'dependencies'
-            ];
+        run: |
+          required_labels="bug enhancement infrastructure documentation technical debt release dependencies"
+          pr_labels=$(jq -r '.pull_request.labels[].name' < $GITHUB_EVENT_PATH)
 
-            const pr = context.payload.pull_request;
-            const prLabels = pr.labels.map(label => label.name);
+          # Check if any required label is present
+          for label in $required_labels; do
+            if [[ "$pr_labels" == *"$label"* ]]; then
+              echo "### PR Label Check Passed ✅" >> $GITHUB_STEP_SUMMARY
+              echo "Your PR has a valid label. Great job!" >> $GITHUB_STEP_SUMMARY
+              exit 0
+            fi
+          done
 
-            // Check if the PR has at least one required label
-            const hasRequiredLabel = requiredLabels.some(label => prLabels.includes(label));
+          # If no required labels are found, fail the step
+          echo "### Missing Required Labels 🚨" >> $GITHUB_STEP_SUMMARY
+          echo "Your PR must have at least one of the following labels:" >> $GITHUB_STEP_SUMMARY
+          for label in $required_labels; do
+            echo "- **$label**" >> $GITHUB_STEP_SUMMARY
+          done
+          echo -e "\n### Why Are Labels Important?\nLabels help categorize and prioritize your PR. Please add one of the required labels and re-run the check." >> $GITHUB_STEP_SUMMARY
 
-            if (!hasRequiredLabel) {
-              return {
-                conclusion: 'failure',
-                output: {
-                  title: 'Missing Required Labels',
-                  summary: `Your PR must have at least one of the following labels:\n\n` +
-                           `- **bug**\n` +
-                           `- **enhancement**\n` +
-                           `- **infrastructure**\n` +
-                           `- **documentation**\n` +
-                           `- **technical debt**\n` +
-                           `- **release**\n` +
-                           `- **dependencies**`,
-                  text: ``
-                },
-              };
-            }
-
-            return {
-              conclusion: 'success',
-              output: {
-                title: 'PR Label Check Passed',
-                summary: 'Your PR contains a valid label.'
-              }
-            };
+          echo "::error::No valid labels found. Your PR must include at least one required label."
+          exit 1
